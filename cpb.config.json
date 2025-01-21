@@ -1,0 +1,88 @@
+{
+  "output": {
+    "directory": "./out",
+    "filename": "project_bundle.txt",
+    "timestamped": true
+  },
+  "files": {
+    "include": {
+      "asciidoc": [
+        ".adoc",
+        ".asc",
+        ".asciidoc"
+      ],
+      "code": [
+        ".dart"
+      ],
+      "docs": [
+        ".md",
+        ".json",
+        ".yaml",
+        ".yml"
+      ],
+      "config": [
+        ".json",
+        ".yml",
+        ".yaml",
+        ".toml"
+      ]
+    },
+    "exclude": {
+      "directories": [
+        ".dart_tool",
+        ".git",
+        ".idea",
+        "build",
+        ".vercel",
+        ".github",
+        ".vscode"
+      ],
+      "files": [
+        ".env",
+        ".DS_Store",
+        ".gitignore",
+        "pubspec.lock",
+        "cpb.config.json"
+      ],
+      "patterns": [
+        "*.log"
+      ]
+    },
+    "binary": {
+      "extensions": [
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".gif",
+        ".pdf",
+        ".mp4",
+        ".mov",
+        ".zip",
+        ".tar",
+        ".gz"
+      ],
+      "maxSize": 1048576
+    }
+  },
+  "project": {
+    "mainFiles": [
+      "lib/main.dart"
+    ],
+    "typeRules": {
+      "node": [
+        "package.json"
+      ],
+      "python": [
+        "requirements.txt",
+        "setup.py"
+      ],
+      "dart": [
+        "pubspec.yaml"
+      ],
+      "asciidoc": [
+        ".adoc",
+        ".asc"
+      ]
+    }
+  }
+}
