@@ -3,6 +3,7 @@ import '../models/asset.dart';
 import '../database/database_helper.dart';
 import 'transaction_form.dart';
 import 'transaction_history_screen.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -12,11 +13,13 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final DatabaseHelper _dbHelper = DatabaseHelper();
   List<Asset> _assets = [];
+  String _version = '';
 
   @override
   void initState() {
     super.initState();
     _loadAssets();
+    _loadVersion();
   }
 
   Future<void> _loadAssets() async {
@@ -25,6 +28,14 @@ class _HomeScreenState extends State<HomeScreen> {
       _assets = assets;
     });
   }
+
+  Future<void> _loadVersion() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    setState(() {
+      _version = packageInfo.version;
+    });
+  }
+
 
   double get _totalPortfolioValue {
     return _assets.fold(0, (sum, asset) => sum + asset.totalValue);
@@ -67,7 +78,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        title: const Text('Portfolio Tracker'),
+        title: Text('Portfolio Tracker v$_version'),
         centerTitle: true,
         elevation: 0,
         backgroundColor: colorScheme.surface,
