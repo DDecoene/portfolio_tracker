@@ -28,7 +28,7 @@ class _TransactionFormState extends State<TransactionForm> {
   List<Asset> _existingAssets = [];
   Asset? _selectedAsset;
   bool _isNewAsset = true;
-  bool _isSubmitting = false;  // Add loading state
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -81,6 +81,14 @@ class _TransactionFormState extends State<TransactionForm> {
       initialDate: _date,
       firstDate: DateTime(2000),
       lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(context).colorScheme,
+          ),
+          child: child!,
+        );
+      },
     );
     if (picked != null && picked != _date) {
       setState(() {
@@ -92,17 +100,25 @@ class _TransactionFormState extends State<TransactionForm> {
   void _showErrorDialog(String message) {
     showDialog(
       context: context,
-      barrierDismissible: true,  // Allow tapping outside to dismiss
+      barrierDismissible: true,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Error'),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.error_outline, 
+                color: Theme.of(context).colorScheme.error),
+              const SizedBox(width: 8),
+              const Text('Error'),
+            ],
+          ),
           content: Text(message),
           actions: <Widget>[
             TextButton(
               child: const Text('OK'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
+              onPressed: () => Navigator.of(context).pop(),
             ),
           ],
         );
@@ -151,7 +167,14 @@ class _TransactionFormState extends State<TransactionForm> {
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Transaction saved successfully')),
+          SnackBar(
+            content: const Text('Transaction saved successfully'),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            backgroundColor: Theme.of(context).colorScheme.primary,
+          ),
         );
       }
     } on InsufficientQuantityException catch (e) {
@@ -167,11 +190,45 @@ class _TransactionFormState extends State<TransactionForm> {
     }
   }
 
+  InputDecoration _getInputDecoration(String label, [Widget? prefix]) {
+    return InputDecoration(
+      labelText: label,
+      prefix: prefix,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(
+          color: Theme.of(context).colorScheme.outline,
+        ),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(
+          color: Theme.of(context).colorScheme.outline,
+        ),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(
+          color: Theme.of(context).colorScheme.primary,
+          width: 2,
+        ),
+      ),
+      filled: true,
+      fillColor: Theme.of(context).colorScheme.surface,
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 16,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    final colorScheme = Theme.of(context).colorScheme;
+    
+    return Container(
       padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
         left: 16,
         right: 16,
         top: 16,
@@ -183,19 +240,50 @@ class _TransactionFormState extends State<TransactionForm> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                'New Transaction',
-                style: Theme.of(context).textTheme.headlineSmall,
-                textAlign: TextAlign.center,
+              Center(
+                child: Container(
+                  width: 32,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: colorScheme.onSurfaceVariant.withOpacity(0.4),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
               ),
               const SizedBox(height: 16),
+              Text(
+                'New Transaction',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
               DropdownButtonFormField<TransactionType>(
                 value: _type,
-                decoration: const InputDecoration(labelText: 'Transaction Type'),
+                decoration: _getInputDecoration('Transaction Type'),
                 items: TransactionType.values.map((type) {
+                  IconData icon;
+                  switch (type) {
+                    case TransactionType.buy:
+                      icon = Icons.add_circle_outline;
+                      break;
+                    case TransactionType.sell:
+                      icon = Icons.remove_circle_outline;
+                      break;
+                    case TransactionType.priceUpdate:
+                      icon = Icons.update;
+                      break;
+                  }
                   return DropdownMenuItem(
                     value: type,
-                    child: Text(type.toString().split('.').last.toUpperCase()),
+                    child: Row(
+                      children: [
+                        Icon(icon, size: 20, color: colorScheme.primary),
+                        const SizedBox(width: 8),
+                        Text(type.toString().split('.').last.toUpperCase()),
+                      ],
+                    ),
                   );
                 }).toList(),
                 onChanged: (value) {
@@ -207,30 +295,53 @@ class _TransactionFormState extends State<TransactionForm> {
               ),
               if (_showNewAssetOption) ...[
                 const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        _isNewAsset ? 'Creating New Asset' : 'Using Existing Asset',
-                        style: Theme.of(context).textTheme.titleSmall,
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceVariant.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Asset Type',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w500,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            Text(
+                              _isNewAsset ? 'Creating New Asset' : 'Using Existing Asset',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    Switch(
-                      value: _isNewAsset,
-                      onChanged: (value) {
-                        setState(() {
-                          _isNewAsset = value;
-                          _resetForm();
-                        });
-                      },
-                    ),
-                  ],
+                      Switch(
+                        value: _isNewAsset,
+                        onChanged: (value) {
+                          setState(() {
+                            _isNewAsset = value;
+                            _resetForm();
+                          });
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ],
+              const SizedBox(height: 16),
               if ((!_isNewAsset || !_showNewAssetOption) && _existingAssets.isNotEmpty)
                 DropdownButtonFormField<Asset>(
                   value: _selectedAsset,
-                  decoration: const InputDecoration(labelText: 'Select Asset'),
+                  decoration: _getInputDecoration('Select Asset'),
                   items: _existingAssets.map((asset) {
                     return DropdownMenuItem(
                       value: asset,
@@ -246,8 +357,9 @@ class _TransactionFormState extends State<TransactionForm> {
                   onChanged: _updateSelectedAsset,
                 ),
               if (_isNewAsset && _showNewAssetOption) ...[
+                const SizedBox(height: 16),
                 TextFormField(
-                  decoration: const InputDecoration(labelText: 'Symbol'),
+                  decoration: _getInputDecoration('Symbol'),
                   textCapitalization: TextCapitalization.characters,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -257,8 +369,9 @@ class _TransactionFormState extends State<TransactionForm> {
                   },
                   onSaved: (value) => _symbol = value!.toUpperCase(),
                 ),
+                const SizedBox(height: 16),
                 TextFormField(
-                  decoration: const InputDecoration(labelText: 'Name'),
+                  decoration: _getInputDecoration('Name'),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter a name';
@@ -268,13 +381,12 @@ class _TransactionFormState extends State<TransactionForm> {
                   onSaved: (value) => _name = value!,
                 ),
               ],
+              const SizedBox(height: 16),
               TextFormField(
-                decoration: const InputDecoration(
-                  labelText: 'Price',
-                  prefixText: '\$',
-                ),
+                decoration: _getInputDecoration('Price', 
+                  Text('\$', style: TextStyle(color: colorScheme.onSurface))),
                 initialValue: _selectedAsset?.currentPrice.toString(),
-                keyboardType: TextInputType.number,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter a price';
@@ -286,10 +398,11 @@ class _TransactionFormState extends State<TransactionForm> {
                 },
                 onSaved: (value) => _price = double.parse(value!),
               ),
-              if (_showQuantityField)
+              if (_showQuantityField) ...[
+                const SizedBox(height: 16),
                 TextFormField(
-                  decoration: const InputDecoration(labelText: 'Quantity'),
-                  keyboardType: TextInputType.number,
+                  decoration: _getInputDecoration('Quantity'),
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter a quantity';
@@ -301,24 +414,73 @@ class _TransactionFormState extends State<TransactionForm> {
                   },
                   onSaved: (value) => _quantity = double.parse(value!),
                 ),
-              ListTile(
-                title: const Text('Transaction Date'),
-                subtitle: Text(
-                  '${_date.year}-${_date.month.toString().padLeft(2, '0')}-${_date.day.toString().padLeft(2, '0')}',
-                ),
-                trailing: const Icon(Icons.calendar_today),
-                onTap: () => _selectDate(context),
-              ),
+              ],
               const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _isSubmitting ? null : _submitForm,
-                child: _isSubmitting 
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Save Transaction'),
+              InkWell(
+                onTap: () => _selectDate(context),
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: colorScheme.outline),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Transaction Date',
+                            style: TextStyle(
+                              color: colorScheme.onSurfaceVariant,
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${_date.year}-${_date.month.toString().padLeft(2, '0')}-${_date.day.toString().padLeft(2, '0')}',
+                            style: TextStyle(
+                              color: colorScheme.onSurface,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Icon(Icons.calendar_today, 
+                        color: colorScheme.primary),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _isSubmitting ? null : _submitForm,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colorScheme.primary,
+                    foregroundColor: colorScheme.onPrimary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: _isSubmitting 
+                    ? SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            colorScheme.onPrimary,
+                          ),
+                        ),
+                      )
+                    : const Text('Save Transaction',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                ),
               ),
               const SizedBox(height: 16),
             ],

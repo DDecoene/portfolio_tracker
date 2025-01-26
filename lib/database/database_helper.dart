@@ -1,4 +1,3 @@
-import 'database_core.dart';
 import 'asset_operations.dart';
 import 'transaction_operations.dart';
 import '../models/asset.dart';
@@ -12,7 +11,6 @@ class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   final AssetOperations _assetOps = AssetOperations();
   final TransactionOperations _transactionOps = TransactionOperations();
-  final DatabaseCore _dbCore = DatabaseCore();
 
   factory DatabaseHelper() => _instance;
 
