@@ -56,6 +56,6 @@ class AssetTransaction {
   }
 
   String get formattedDateTime {
-    return '${formattedDate} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+    return '$formattedDate ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
 }

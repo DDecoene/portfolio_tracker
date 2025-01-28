@@ -2,23 +2,25 @@ import 'package:flutter/material.dart';
 import '../models/asset.dart';
 import '../models/asset_transaction.dart';
 import '../database/database_helper.dart';
+import 'package:provider/provider.dart';
+import '../providers/settings_provider.dart';
 
 class TransactionForm extends StatefulWidget {
   final VoidCallback onTransactionComplete;
 
   const TransactionForm({
-    Key? key,
+    super.key,
     required this.onTransactionComplete,
-  }) : super(key: key);
+  });
 
   @override
-  _TransactionFormState createState() => _TransactionFormState();
+  TransactionFormState createState() => TransactionFormState();
 }
 
-class _TransactionFormState extends State<TransactionForm> {
+class TransactionFormState extends State<TransactionForm> {
   final _formKey = GlobalKey<FormState>();
   final DatabaseHelper _dbHelper = DatabaseHelper();
-  
+
   TransactionType _type = TransactionType.buy;
   String _symbol = '';
   String _name = '';
@@ -43,11 +45,10 @@ class _TransactionFormState extends State<TransactionForm> {
     });
   }
 
-  bool get _showQuantityField => 
+  bool get _showQuantityField =>
       _type == TransactionType.buy || _type == TransactionType.sell;
 
-  bool get _showNewAssetOption =>
-      _type == TransactionType.buy;
+  bool get _showNewAssetOption => _type == TransactionType.buy;
 
   bool get _requireAssetSelection =>
       (_type == TransactionType.sell || _type == TransactionType.priceUpdate);
@@ -108,8 +109,8 @@ class _TransactionFormState extends State<TransactionForm> {
           ),
           title: Row(
             children: [
-              Icon(Icons.error_outline, 
-                color: Theme.of(context).colorScheme.error),
+              Icon(Icons.error_outline,
+                  color: Theme.of(context).colorScheme.error),
               const SizedBox(width: 8),
               const Text('Error'),
             ],
@@ -128,7 +129,7 @@ class _TransactionFormState extends State<TransactionForm> {
 
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     _formKey.currentState!.save();
 
     setState(() {
@@ -137,7 +138,7 @@ class _TransactionFormState extends State<TransactionForm> {
 
     try {
       late int assetId;
-      
+
       if (_type == TransactionType.buy && _isNewAsset) {
         final newAsset = Asset(
           symbol: _symbol,
@@ -163,7 +164,7 @@ class _TransactionFormState extends State<TransactionForm> {
 
       await _dbHelper.insertTransaction(transaction);
       widget.onTransactionComplete();
-      
+
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -225,7 +226,7 @@ class _TransactionFormState extends State<TransactionForm> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Container(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom + 16,
@@ -245,7 +246,7 @@ class _TransactionFormState extends State<TransactionForm> {
                   width: 32,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: colorScheme.onSurfaceVariant.withOpacity(0.4),
+                    color: colorScheme.onSurfaceVariant.withValues(alpha:.4),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -254,8 +255,8 @@ class _TransactionFormState extends State<TransactionForm> {
               Text(
                 'New Transaction',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                      fontWeight: FontWeight.bold,
+                    ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
@@ -298,7 +299,7 @@ class _TransactionFormState extends State<TransactionForm> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: colorScheme.surfaceVariant.withOpacity(0.5),
+                    color: colorScheme.surfaceContainerHighest.withValues(alpha:.5),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -315,7 +316,9 @@ class _TransactionFormState extends State<TransactionForm> {
                               ),
                             ),
                             Text(
-                              _isNewAsset ? 'Creating New Asset' : 'Using Existing Asset',
+                              _isNewAsset
+                                  ? 'Creating New Asset'
+                                  : 'Using Existing Asset',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: colorScheme.onSurfaceVariant,
@@ -338,7 +341,8 @@ class _TransactionFormState extends State<TransactionForm> {
                 ),
               ],
               const SizedBox(height: 16),
-              if ((!_isNewAsset || !_showNewAssetOption) && _existingAssets.isNotEmpty)
+              if ((!_isNewAsset || !_showNewAssetOption) &&
+                  _existingAssets.isNotEmpty)
                 DropdownButtonFormField<Asset>(
                   value: _selectedAsset,
                   decoration: _getInputDecoration('Select Asset'),
@@ -382,32 +386,40 @@ class _TransactionFormState extends State<TransactionForm> {
                 ),
               ],
               const SizedBox(height: 16),
-              TextFormField(
-                decoration: _getInputDecoration('Price', 
-                  Text('\$', style: TextStyle(color: colorScheme.onSurface))),
-                initialValue: _selectedAsset?.currentPrice.toString(),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a price';
-                  }
-                  if (double.tryParse(value) == null || double.parse(value) <= 0) {
-                    return 'Please enter a valid price';
-                  }
-                  return null;
-                },
-                onSaved: (value) => _price = double.parse(value!),
+              Consumer<SettingsProvider>(
+                builder: (context, settings, child) => TextFormField(
+                  decoration: _getInputDecoration(
+                      'Price',
+                      Text(settings.currencySymbol,
+                          style: TextStyle(color: colorScheme.onSurface))),
+                  initialValue: _selectedAsset?.currentPrice.toString(),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter a price';
+                    }
+                    if (double.tryParse(value) == null ||
+                        double.parse(value) <= 0) {
+                      return 'Please enter a valid price';
+                    }
+                    return null;
+                  },
+                  onSaved: (value) => _price = double.parse(value!),
+                ),
               ),
               if (_showQuantityField) ...[
                 const SizedBox(height: 16),
                 TextFormField(
                   decoration: _getInputDecoration('Quantity'),
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter a quantity';
                     }
-                    if (double.tryParse(value) == null || double.parse(value) <= 0) {
+                    if (double.tryParse(value) == null ||
+                        double.parse(value) <= 0) {
                       return 'Please enter a valid quantity';
                     }
                     return null;
@@ -448,8 +460,7 @@ class _TransactionFormState extends State<TransactionForm> {
                           ),
                         ],
                       ),
-                      Icon(Icons.calendar_today, 
-                        color: colorScheme.primary),
+                      Icon(Icons.calendar_today, color: colorScheme.primary),
                     ],
                   ),
                 ),
@@ -467,19 +478,20 @@ class _TransactionFormState extends State<TransactionForm> {
                     ),
                     elevation: 0,
                   ),
-                  child: _isSubmitting 
-                    ? SizedBox(
-                        height: 24,
-                        width: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            colorScheme.onPrimary,
+                  child: _isSubmitting
+                      ? SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              colorScheme.onPrimary,
+                            ),
                           ),
-                        ),
-                      )
-                    : const Text('Save Transaction',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                        )
+                      : const Text('Save Transaction',
+                          style: TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w600)),
                 ),
               ),
               const SizedBox(height: 16),
